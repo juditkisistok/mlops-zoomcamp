@@ -179,3 +179,5 @@ data/
 *.db
 artifacts/
 output/
+models/
+*.txt
