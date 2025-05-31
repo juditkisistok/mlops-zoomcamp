@@ -7,6 +7,7 @@ import mlflow
 import polars as pl
 import xgboost as xgb
 import numpy as np
+from datetime import date
 
 from sklearn.metrics import root_mean_squared_error
 from sklearn.feature_extraction import DictVectorizer
@@ -14,6 +15,7 @@ from mlflow.models.signature import infer_signature
 
 from prefect import task, flow
 from prefect_aws import S3Bucket
+from prefect.artifacts import create_markdown_artifact
 
 """
 Deployment commands:
@@ -122,6 +124,23 @@ def train_model(X_train: xgb.DMatrix, y_train: np.ndarray,
         
         signature = infer_signature(X_val, y_pred)
         mlflow.xgboost.log_model(booster, artifact_path="models_mlflow", signature=signature, model_format="json")
+
+        markdown_rmse_report = f"""# RMSE Report
+
+        ## Summary
+
+        Duration Prediction 
+
+        ## RMSE XGBoost Model
+
+        | Date    | RMSE |
+        |:----------|-------:|
+        | {date.today()} | {rmse:.2f} |
+        """
+
+        create_markdown_artifact(
+            key="duration-model-report", markdown=markdown_rmse_report
+        )
 
         # return the run id from mlflow
         return run.info.run_id
