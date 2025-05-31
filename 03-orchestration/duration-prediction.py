@@ -87,7 +87,6 @@ def create_X(df: pl.DataFrame, dv: DictVectorizer = None) -> tuple[np.ndarray, D
 
     return X, dv
 
-@task(log_prints=True)
 def create_rmse_report(rmse: float) -> None:
     """Create a markdown report for the RMSE metric."""
     markdown_rmse_report = f"""# RMSE Report
