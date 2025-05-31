@@ -27,6 +27,7 @@ deployments:
     year: 2021
     month: 1
     from_url: true
+    color: green
   work_pool:
     name: mlops-pool
 - name: taxi-flow-local
@@ -34,7 +35,8 @@ deployments:
   parameters:
     year: 2021
     month: 1
-    from_url: false
+    color: green
+    from_url: true
   work_pool:
     name: mlops-pool
 - name: taxi-flow-s3
@@ -43,5 +45,6 @@ deployments:
     year: 2021
     month: 1
     from_url: false
+    color: green
   work_pool:
     name: mlops-pool

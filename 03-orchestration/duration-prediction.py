@@ -127,16 +127,16 @@ def train_model(X_train: xgb.DMatrix, y_train: np.ndarray,
         return run.info.run_id
         
 @flow(log_prints=True, name="NYC-Taxi-Duration-Prediction")
-def run(year: int, month: int, from_url: bool = False) -> str:
+def run(year: int, month: int, color: str = "green", from_url: bool = False) -> str:
     """
     Run the NYC Taxi Duration Prediction model.
     """
-    df_train = read_dataframe(year, month, from_url)
+    df_train = read_dataframe(year, month, color, from_url)
 
     next_month = month + 1 if month < 12 else 1
     next_year = year if month < 12 else year + 1
 
-    df_val = read_dataframe(next_year, next_month)
+    df_val = read_dataframe(next_year, next_month, color, from_url)
 
     print(f"len(df_train): {len(df_train)}, len(df_val): {len(df_val)}")
 
