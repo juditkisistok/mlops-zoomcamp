@@ -88,6 +88,26 @@ def create_X(df: pl.DataFrame, dv: DictVectorizer = None) -> tuple[np.ndarray, D
     return X, dv
 
 @task(log_prints=True)
+def create_rmse_report(rmse: float) -> None:
+    """Create a markdown report for the RMSE metric."""
+    markdown_rmse_report = f"""# RMSE Report
+
+## Summary
+
+Duration Prediction 
+
+## RMSE XGBoost Model
+
+| Date    | RMSE |
+|:----------|-------:|
+| {date.today()} | {rmse:.2f} |"""
+
+    create_markdown_artifact(
+        key="duration-model-report", 
+        markdown=markdown_rmse_report
+    )
+
+@task(log_prints=True)
 def train_model(X_train: xgb.DMatrix, y_train: np.ndarray, 
                 X_val: xgb.DMatrix, y_val: np.ndarray, dv: DictVectorizer) -> str:
     with mlflow.start_run() as run:
@@ -125,22 +145,7 @@ def train_model(X_train: xgb.DMatrix, y_train: np.ndarray,
         signature = infer_signature(X_val, y_pred)
         mlflow.xgboost.log_model(booster, artifact_path="models_mlflow", signature=signature, model_format="json")
 
-        markdown_rmse_report = f"""# RMSE Report
-
-        ## Summary
-
-        Duration Prediction 
-
-        ## RMSE XGBoost Model
-
-        | Date    | RMSE |
-        |:----------|-------:|
-        | {date.today()} | {rmse:.2f} |
-        """
-
-        create_markdown_artifact(
-            key="duration-model-report", markdown=markdown_rmse_report
-        )
+        create_rmse_report(rmse)
 
         # return the run id from mlflow
         return run.info.run_id
