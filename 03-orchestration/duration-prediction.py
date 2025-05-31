@@ -13,6 +13,7 @@ from sklearn.feature_extraction import DictVectorizer
 from mlflow.models.signature import infer_signature
 
 from prefect import task, flow
+from prefect_aws import S3Bucket
 
 """
 Deployment commands:
@@ -20,6 +21,10 @@ prefect init - create the prefect.yaml file
 prefect server start - start the server
 prefect deploy 03-orchestration/duration-prediction.py:run -n taxi-flow -p "mlops-pool" -create the deployment
 prefect worker start -p "mlops-pool"  - start the worker
+
+We can also create multiple deployments for the same flow, using prefect.yaml.
+
+We can also register artifacts (like links, markdown, etc.)
 """
 
 models_folder = Path("models")
@@ -29,15 +34,22 @@ mlflow.set_tracking_uri("http://127.0.0.1:5000")
 mlflow.set_experiment("nyc-taxi-experiment")
 
 @task(retries=3, retry_delay_seconds=2, log_prints=True)
-def read_dataframe(year: int, month: int, color: str = "green") -> pl.DataFrame: 
+def read_dataframe(year: int, month: int, color: str = "green", from_url: bool = False) -> pl.DataFrame: 
     """
     Read a dataframe from a parquet file and return a dataframe with the duration of the trip in minutes.
     """
 
-    url = f"https://d37ci6vzurychx.cloudfront.net/trip-data/{color}_tripdata_{year}-{month:02d}.parquet"
-    
+    if from_url:
+        url = f"https://d37ci6vzurychx.cloudfront.net/trip-data/{color}_tripdata_{year}-{month:02d}.parquet"
+        df = pl.read_parquet(url)
+    else:
+        # we can use the S3 bucket block to read the file from S3
+        s3_bucket_block = S3Bucket.load("s3-bucket-mlops")
+        s3_bucket_block.download_folder_to_path(from_folder = "data", to_folder = "data")
+        df = pl.read_parquet(f"data/{color}_tripdata_{year}-{month:02d}.parquet")
+
     df = (
-        pl.read_parquet(url)
+        df
         .with_columns(
             (pl.col("lpep_dropoff_datetime") - pl.col("lpep_pickup_datetime"))
             .dt.total_seconds()
@@ -115,11 +127,11 @@ def train_model(X_train: xgb.DMatrix, y_train: np.ndarray,
         return run.info.run_id
         
 @flow(log_prints=True, name="NYC-Taxi-Duration-Prediction")
-def run(year: int, month: int) -> str:
+def run(year: int, month: int, from_url: bool = False) -> str:
     """
     Run the NYC Taxi Duration Prediction model.
     """
-    df_train = read_dataframe(year, month)
+    df_train = read_dataframe(year, month, from_url)
 
     next_month = month + 1 if month < 12 else 1
     next_year = year if month < 12 else year + 1
