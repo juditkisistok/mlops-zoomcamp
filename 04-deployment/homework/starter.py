@@ -3,6 +3,15 @@ import pandas as pd
 import os
 import sys
 
+year = int(sys.argv[1])
+month = int(sys.argv[2])
+
+categorical = ['PULocationID', 'DOLocationID']
+
+MODEL_FILE = os.getenv('MODEL_FILE', 'model.bin')
+with open(MODEL_FILE, 'rb') as f_in:
+    dv, model = pickle.load(f_in)
+
 def read_data(filename, categorical):
     df = pd.read_parquet(filename)
     
@@ -47,25 +56,13 @@ def prepare_output(df, y_pred, year, month, output_file):
 
     return output_file
 
-def run():
-    with open('model.bin', 'rb') as f_in:
-        dv, model = pickle.load(f_in)
-
-    categorical = ['PULocationID', 'DOLocationID']
-
-    year = int(sys.argv[1]) if len(sys.argv) > 1 else 2023
-    month = int(sys.argv[2]) if len(sys.argv) > 2 else 3
-
+if __name__ == "__main__":
     os.makedirs('output', exist_ok=True)
     output_file = f'output/yellow_tripdata_{year:04d}-{month:02d}.parquet'
 
     df = read_data(f'https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_{year:04d}-{month:02d}.parquet', categorical)
     y_pred = predict(df, categorical, dv, model)
     output_file = prepare_output(df, y_pred, year, month, output_file)
-
-
-if __name__ == "__main__":
-    run()
 
 
 
