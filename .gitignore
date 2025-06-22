@@ -181,3 +181,4 @@ artifacts/
 output/
 models/
 *.txt
+workspace/

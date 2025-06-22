@@ -1,0 +1,47 @@
+version: '3.7'
+
+# volume: where we store the artifacts
+volumes:
+  grafana_data: {}
+
+# networks: allow us to organize services in groups
+# control which services can communicate with each other
+networks:
+  front-tier:
+  back-tier:
+
+# specifying services
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - back-tier
+
+  adminer:
+    # tool to help us manage the database content
+    image: adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - front-tier
+      - back-tier
+
+  grafana:
+    image: grafana/grafana
+    user: root
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./config/grafana_datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ./config/grafana_dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ./dashboards:/opt/grafana/dashboards
+    networks:
+      - front-tier
+      - back-tier
